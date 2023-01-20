@@ -59,6 +59,6 @@ ${item.price}
 	}
 }
 
-setInterval(() => {
+// setInterval(() => {
 	start();
-}, 600000);
+// }, 600000);
