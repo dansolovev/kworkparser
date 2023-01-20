@@ -11,7 +11,10 @@ let currentCards = []
 
 async function start() {
 	try {
-		const browser = await puppeteer.launch();
+		const browser = await puppeteer.launch({
+			headless: true,
+			args: ["--no-sandbox"],
+		});
 		const page = await browser.newPage();
 		await page.goto(link, { waitUntil: "networkidle0" });
 		let html = await page.evaluate(async () => {
@@ -38,27 +41,28 @@ async function start() {
 			return res;
 		});
 		let newArray = html.filter(card => currentCards.every(item => item.title !== card.title));
-		console.log(newArray);
-		newArray.forEach(item => {
-			const text = `
+		if (newArray.length > 0) {
+			newArray.forEach((item) => {
+				const text = `
 ${item.title}
 
 ${item.description}
 
 ${item.price}
 			`;
-			axios.post(postLink, {
-				chat_id: chatId,
-				text: text,
+				axios.post(postLink, {
+					chat_id: chatId,
+					text: text,
+				});
 			});
-		})
-		currentCards = [...html];
+			currentCards = [...html];
+		}
 		// console.log(page.$(".wants-content").innerHTML);
 	} catch (e) {
 		console.log(e);
 	}
 }
 
-// setInterval(() => {
+setInterval(() => {
 	start();
-// }, 600000);
+}, 600000);
