@@ -1,5 +1,6 @@
 const puppeteer = require("puppeteer");
 const axios = require("axios").default;
+const cron = require("node-cron");
 
 const link = "https://kwork.ru/projects?c=24";
 
@@ -41,7 +42,7 @@ async function start() {
 			return res;
 		});
 		let newArray = html.filter(card => currentCards.every(item => item.title !== card.title));
-		if (newArray.length > 0) {
+		// if (newArray.length > 0) {
 			newArray.forEach((item) => {
 				const text = `
 ${item.title}
@@ -55,14 +56,18 @@ ${item.price}
 					text: text,
 				});
 			});
-			currentCards = [...html];
-		}
+			currentCards = JSON.parse(JSON.stringify(html));
+		// }
 		// console.log(page.$(".wants-content").innerHTML);
 	} catch (e) {
 		console.log(e);
 	}
 }
 
-setInterval(() => {
+// setInterval(() => {
+	// start();
+// }, 600000);
+cron.schedule("*/10 * * * *", function () {
 	start();
-}, 600000);
+	// console.log("running a task every minute");
+});
