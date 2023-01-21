@@ -1,14 +1,13 @@
 const puppeteer = require("puppeteer");
 const axios = require("axios").default;
 const cron = require("node-cron");
+const fs = require("fs");
 
-const link = "https://kwork.ru/projects?c=24";
+const link = "https://kwork.ru/projects";
 
 const token = "5827985997:AAGDh-1l6jrAQ1Wc3WVOaPnxf-TEIeBpgso";
 const chatId = "2015142633";
 let postLink = `https://api.telegram.org/bot${token}/sendMessage`;
-
-let currentCards = []
 
 async function start() {
 	try {
@@ -18,21 +17,27 @@ async function start() {
 		});
 		const page = await browser.newPage();
 		await page.goto(link, { waitUntil: "networkidle0" });
+		await page.waitForSelector(
+			".wants-card__header-price.wants-card__price span[lang]"
+		);
 		let html = await page.evaluate(async () => {
 			let res = [];
 			let container = document.querySelectorAll(
 				".card.want-card.js-want-container"
 			);
 			container.forEach((item) => {
-				const title = item.querySelector(
+				const titleBlock = item.querySelector(
 					".wants-card__left .wants-card__header-title a"
-				).innerText;
-				const description = item.querySelector(
+				);
+				const title = titleBlock ? titleBlock.innerText : ""
+				const descBlock = item.querySelector(
 					".wants-card__left .wants-card__description-text .breakwords .d-inline"
-				).innerText;
-				const price = item.querySelector(
+				);
+				const description = descBlock ? descBlock.innerText : ""
+				const priceBlock = item.querySelector(
 					".wants-card__header-price.wants-card__price span[lang]"
-				).innerText;
+				);
+				const price = priceBlock ? priceBlock.innerText : "";
 				res.push({
 					title,
 					description,
@@ -41,9 +46,36 @@ async function start() {
 			});
 			return res;
 		});
-		let newArray = html.filter(card => currentCards.every(item => item.title !== card.title));
-		// if (newArray.length > 0) {
-			newArray.forEach((item) => {
+		writeJson(html)
+		await page.close();
+		await browser.close();
+		// let newArray = html.filter(card => currentCards.every(item => item.title !== card.title));
+	} catch (e) {
+		console.log(e);
+	}
+}
+
+function writeJson(parsedInfo) {
+	let rawdata = fs.readFileSync("results.json");
+	let results = [];
+	try {
+		results = JSON.parse(rawdata);
+	} catch (error) {
+		console.log(error);
+	}
+
+	let arrayToSend = parsedInfo.filter((card) =>
+		results.every((item) => item.title !== card.title)
+	);
+
+	let data = JSON.stringify(parsedInfo);
+	fs.writeFileSync("results.json", data);
+
+	sendData(arrayToSend);
+}
+
+function sendData(array) {
+			array.forEach((item) => {
 				const text = `
 ${item.title}
 
@@ -56,18 +88,12 @@ ${item.price}
 					text: text,
 				});
 			});
-			currentCards = JSON.parse(JSON.stringify(html));
-		// }
-		// console.log(page.$(".wants-content").innerHTML);
-	} catch (e) {
-		console.log(e);
-	}
 }
 
 // setInterval(() => {
 	// start();
 // }, 600000);
-cron.schedule("*/10 * * * *", function () {
+cron.schedule("*/5 * * * *", function () {
 	start();
-	// console.log("running a task every minute");
+	console.log("running a task every minute");
 });
