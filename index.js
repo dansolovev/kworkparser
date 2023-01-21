@@ -3,7 +3,7 @@ const axios = require("axios").default;
 const cron = require("node-cron");
 const fs = require("fs");
 
-const link = "https://kwork.ru/projects";
+const link = "https://kwork.ru/projects?c=24";
 
 const token = "5827985997:AAGDh-1l6jrAQ1Wc3WVOaPnxf-TEIeBpgso";
 const chatId = "2015142633";
@@ -95,5 +95,4 @@ ${item.price}
 // }, 600000);
 cron.schedule("*/5 * * * *", function () {
 	start();
-	console.log("running a task every minute");
 });
